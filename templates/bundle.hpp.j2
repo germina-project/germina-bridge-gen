@@ -3,11 +3,12 @@
  * Manifest: {{ manifest_path }}
  */
 
+// clang-format off
+
 #pragma once
 #include <cstdint>
 #include <stddef.h>
 
-// clang-format off
 
 {# Макрос с жестким контролем whitespace (никаких лишних переносов и пробелов) #}
 {% macro resolve_type(type_key) -%}
@@ -27,9 +28,11 @@
 {%- set struct_name = type_info.name | default(name, true) %}
 {%- set fields = type_info.layout | default(type_info.fields, true) %}
 typedef struct {{ struct_name }} {
-    {% for field in fields -%}
-    {% if field is string and "_" in field %}    uint8_t _pad{{ loop.index }}[{{ field | length }}];{% else %}    {{ resolve_type(field.type) }} {{ field.name }};{% endif %}
-    {%- endfor %}
+{% for field in fields -%}
+{% if field is string and "_" in field %}    uint8_t _pad{ loop.index }}[{{ field | length }}];
+{% else %}    {{ resolve_type(field.type) }} {{ field.name }};
+{% endif -%}\
+{% endfor -%}
 } {{ struct_name }};
 
 /* Compile-time safety check */
@@ -43,9 +46,11 @@ static_assert(sizeof({{ struct_name }}) == {{ type_info.size }}, "Size mismatch 
 {%- set struct_name = type_info.name | default(name, true) %}
 {%- set fields = type_info.layout | default(type_info.fields, true) %}
 typedef struct {{ struct_name }} {
-    {% for field in fields -%}
-    {% if field is string and "_" in field %}    uint8_t _pad{{ loop.index }}[{{ field | length }}];{% else %}    {{ resolve_type(field.type) }} {{ field.name }};{% endif %}
-    {%- endfor %}
+{% for field in fields -%}
+{% if field is string and "_" in field %}    uint8_t _pad{{ loop.index }}[{{ field | length }}];
+{% else %}    {{ resolve_type(field.type) }} {{ field.name }};
+{% endif -%}\
+{% endfor -%}
 } {{ struct_name }};
 
 /* Compile-time safety check */
@@ -58,16 +63,16 @@ static_assert(sizeof({{ struct_name }}) == {{ type_info.size }}, "Size mismatch 
 
 /* API Table for Imported functions (What this module requires) */
 typedef struct GBundleImportApi {
-    {% for name, method in import_methods.items() -%}
+{% for name, method in import_methods.items() -%}
     {{ resolve_type(method.return) }} (*{{ name }})({% for p in method.params %}{{ resolve_type(p.type) }} {{ p.name }}{% if not loop.last %}, {% endif %}{% endfor %});
-    {%- endfor %}
+{% endfor -%}
 } GBundleImportApi;
 
 /* API Table for Exported functions (What this module provides) */
 typedef struct GBundleExportApi {
-    {% for name, method in export_methods.items() -%}
+{% for name, method in export_methods.items() -%}
     {{ resolve_type(method.return) }} (*{{ name }})({% for p in method.params %}{{ resolve_type(p.type) }} {{ p.name }}{% if not loop.last %}, {% endif %}{% endfor %});
-    {%- endfor %}
+{% endfor -%}
 } GBundleExportApi;
 
 // clang-format on
