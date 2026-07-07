@@ -3,31 +3,82 @@
  * Manifest: {{ manifest_path }}
  */
 
+// clang-format off
+
 #pragma once
 #include <cstdint>
 #include <stddef.h>
 
-{% for name, type_info in export_types.items() %}
-{# Если type_info.name пустой или отсутствует, берем имя ключа из словаря #}
+
+{# Макрос для умного разрешения имен типов с учетом алиасов #}
+{% macro resolve_type(type_key) -%}
+    {% if type_key in export_types %}
+        {{ export_types[type_key].name | default(type_key, true) }}
+    {% elif type_key in import_types %}
+        {{ import_types[type_key].name | default(type_key, true) }}
+    {% else %}
+        {{ type_key | map_type }}
+    {% endif %}
+{%- endmacro %}
+
+# markup-types-zone
+
+/* =====================================================================
+ * IMPORTED TYPES
+ * ===================================================================== */
+{% for name, type_info in import_types.items() %}
 {% set struct_name = type_info.name | default(name, true) %}
 typedef struct {{ struct_name }} {
     {% for field in type_info.layout %}
     {% if field is string and "_" in field %}
     /* Padding to align memory */
-    uint8_t _padding{{ loop.index }}[{{ field | length }}];
+    uint8_t _padding_{{ loop.index }}[{{ field | length }}];
     {% else %}
-    {{ field.type | map_type }} {{ field.name }};
+    {{ resolve_type(field.type) }} {{ field.name }};
     {% endif %}
     {% endfor %}
 } {{ struct_name }};
 
 /* Compile-time safety check */
-static_assert(sizeof({{ type_info.name }}) == {{ type_info.size }}, "Size mismatch for {{ type_info.name }}! Check your manifest padding.");
+static_assert(sizeof({{ struct_name }}) == {{ type_info.size }}, "Size mismatch for {{ struct_name }}! Check your manifest padding.");
 {% endfor %}
 
-/* API Table for the module */
+/* =====================================================================
+ * EXPORTED TYPES
+ * ===================================================================== */
+{% for name, type_info in export_types.items() %}
+{% set struct_name = type_info.name | default(name, true) %}
+typedef struct {{ struct_name }} {
+    {% for field in type_info.layout %}
+    {% if field is string and "_" in field %}
+    /* Padding to align memory */
+    uint8_t _padding_{{ loop.index }}[{{ field | length }}];
+    {% else %}
+    {{ resolve_type(field.type) }} {{ field.name }};
+    {% endif %}
+    {% endfor %}
+} {{ struct_name }};
+
+/* Compile-time safety check */
+static_assert(sizeof({{ struct_name }}) == {{ type_info.size }}, "Size mismatch for {{ struct_name }}! Check your manifest padding.");
+{% endfor %}
+
+/* =====================================================================
+ * API TABLES
+ * ===================================================================== */
+
+/* API Table for Imported functions (What this module requires) */
+typedef struct GBundleImportApi {
+    {% for name, method in import_methods.items() %}
+    {{ resolve_type(method.return) }} (*{{ name }})({% for p in method.params %}{{ resolve_type(p.type) }} {{ p.name }}{% if not loop.last %}, {% endif %}{% endfor %});
+    {% endfor %}
+} GBundleImportApi;
+
+/* API Table for Exported functions (What this module provides) */
 typedef struct GBundleExportApi {
     {% for name, method in export_methods.items() %}
-    {{ method.return | map_type }} (*{{ name }})({% for p in method.params %}{{ p.type | map_type }} {{ p.name }}{% if not loop.last %}, {% endif %}{% endfor %});
+    {{ resolve_type(method.return) }} (*{{ name }})({% for p in method.params %}{{ resolve_type(p.type) }} {{ p.name }}{% if not loop.last %}, {% endif %}{% endfor %});
     {% endfor %}
 } GBundleExportApi;
+
+// clang-format on
