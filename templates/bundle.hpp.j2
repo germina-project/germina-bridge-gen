@@ -11,31 +11,25 @@
 #include <stdalign.h>
 
 /* Настройки видимости (ABI) */
-#ifndef GERMINA_API
-#if defined(GERMINA_STATIC_BUILD)
-/* Для статической библиотеки API макросы пусты */
-#define GERMINA_API
-#define GERMINA_CALL
-#elif defined(_WIN32)
-#ifdef GERMINA_RUNTIME_BUILD
-#define GERMINA_API __declspec(dllexport)
+#ifndef BUNDLE_API
+#if defined(_WIN32)
+/* Так как этот хедер создан для бандла, на Windows мы всегда экспортируем символы */
+#define BUNDLE_API __declspec(dllexport)
+#define BUNDLE_CALL __cdecl
 #else
-#define GERMINA_API __declspec(dllimport)
-#endif
-#define GERMINA_CALL __cdecl
-#else
-#define GERMINA_API __attribute__((visibility("default")))
-#define GERMINA_CALL
+/* На Linux/macOS по умолчанию включаем видимость */
+#define BUNDLE_API __attribute__((visibility("default")))
+#define BUNDLE_CALL
 #endif
 #endif
 
-#ifndef GERMINA_NOEXCEPT
+#ifndef BUNDLE_NOEXCEPT
 #ifdef __cplusplus
 /* Если компилирует C++ компилятор (твоё ядро) */
-#define GERMINA_NOEXCEPT noexcept
+#define BUNDLE_NOEXCEPT noexcept
 #else
 /* Если компилирует Си-компилятор или Rust bindgen (модули) */
-#define GERMINA_NOEXCEPT
+#define BUNDLE_NOEXCEPT
 #endif
 #endif
 
@@ -85,7 +79,7 @@ static_assert(sizeof({{ struct_name }}) == {{ type_info.size }}, "Size mismatch 
 /* API Table for Imported functions (What this module requires) */
 typedef struct GBundleImportApi {
 {%- for name, method in import_methods.items() %}
-    {{ resolve_type(method.return) }} (GERMINA_CALL *{{ name }})({% for p in method.params %}{{ resolve_type(p.type) }} {{ p.name }}{% if not loop.last %}, {% endif %}{% endfor %}) GERMINA_NOEXCEPT;
+    {{ resolve_type(method.return) }} (BUNDLE_CALL *{{ name }})({% for p in method.params %}{{ resolve_type(p.type) }} {{ p.name }}{% if not loop.last %}, {% endif %}{% endfor %}) BUNDLE_NOEXCEPT;
     {#--#}
 {% endfor %}
 } GBundleImportApi;
@@ -96,7 +90,7 @@ extern "C" {
 #endif
 
 {% for name, method in export_methods.items() %}
-GERMINA_API {{ resolve_type(method.return) }} GERMINA_CALL {{ name }}({% for p in method.params %}{{ resolve_type(p.type) }} {{ p.name }}{% if not loop.last %}, {% endif %}{% endfor %}) GERMINA_NOEXCEPT;
+BUNDLE_API {{ resolve_type(method.return) }} BUNDLE_CALL {{ name }}({% for p in method.params %}{{ resolve_type(p.type) }} {{ p.name }}{% if not loop.last %}, {% endif %}{% endfor %}) BUNDLE_NOEXCEPT;
 {#--#}
 {% endfor %}
 
