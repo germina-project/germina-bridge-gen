@@ -9,7 +9,7 @@
 #include <cstdint>
 #include <stddef.h>
 
-{#- Макрос с жестким контролем whitespace (никаких лишних переносов и пробелов) #}
+{# Макрос с жестким контролем whitespace (никаких лишних переносов и пробелов) #}
 {%- macro resolve_type(type_key) -%}
 {%- if type_key in export_types -%}
 {{- export_types[type_key].name | default(type_key, true) -}}
