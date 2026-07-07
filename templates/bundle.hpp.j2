@@ -10,14 +10,11 @@
 #include <stddef.h>
 #include <stdalign.h>
 
-/* Настройки видимости (ABI) */
 #ifndef BUNDLE_API
 #if defined(_WIN32)
-/* Так как этот хедер создан для бандла, на Windows мы всегда экспортируем символы */
 #define BUNDLE_API __declspec(dllexport)
 #define BUNDLE_CALL __cdecl
 #else
-/* На Linux/macOS по умолчанию включаем видимость */
 #define BUNDLE_API __attribute__((visibility("default")))
 #define BUNDLE_CALL
 #endif
@@ -25,10 +22,8 @@
 
 #ifndef BUNDLE_NOEXCEPT
 #ifdef __cplusplus
-/* Если компилирует C++ компилятор (твоё ядро) */
 #define BUNDLE_NOEXCEPT noexcept
 #else
-/* Если компилирует Си-компилятор или Rust bindgen (модули) */
 #define BUNDLE_NOEXCEPT
 #endif
 #endif
@@ -88,7 +83,6 @@ typedef struct GBundleImportApi {
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 {% for name, method in export_methods.items() %}
 BUNDLE_API {{ resolve_type(method.return) }} BUNDLE_CALL {{ name }}({% for p in method.params %}{{ resolve_type(p.type) }} {{ p.name }}{% if not loop.last %}, {% endif %}{% endfor %}) BUNDLE_NOEXCEPT;
 {#--#}
