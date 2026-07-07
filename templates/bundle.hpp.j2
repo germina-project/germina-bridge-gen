@@ -1,6 +1,7 @@
 /* * AUTO-GENERATED FILE. DO NOT EDIT.
  * Generated at: {{ generated_at }}
  * Manifest: {{ manifest_path }}
+ * Bundle Author: {{author}}
  */
 
 // clang-format off
@@ -74,7 +75,7 @@ static_assert(sizeof({{ struct_name }}) == {{ type_info.size }}, "Size mismatch 
 /* API Table for Imported functions (What this module requires) */
 typedef struct GBundleImportApi {
 {%- for name, method in import_methods.items() %}
-    {{ resolve_type(method.return) }} (BUNDLE_CALL *{{ name }})({% for p in method.params %}{{ resolve_type(p.type) }} {{ p.name }}{% if not loop.last %}, {% endif %}{% endfor %}) BUNDLE_NOEXCEPT;
+    {%if method.return %}{{ resolve_type(method.return) }}{%- else %}void{%- endif %} (BUNDLE_CALL *{{ name }})({% for p in method.params %}{{ resolve_type(p.type) }} {{ p.name }}{% if not loop.last %}, {% endif %}{% endfor %}) BUNDLE_NOEXCEPT;
     {#--#}
 {% endfor %}
 } GBundleImportApi;
@@ -83,8 +84,14 @@ typedef struct GBundleImportApi {
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+BUNDLE_API void BUNDLE_CALL {{mount}}(const GBundleContext* context);
+{% if unmount -%}
+BUNDLE_API void BUNDLE_CALL {{unmount}}();
+{%- endif %}
+
 {% for name, method in export_methods.items() %}
-BUNDLE_API {{ resolve_type(method.return) }} BUNDLE_CALL {{ name }}({% for p in method.params %}{{ resolve_type(p.type) }} {{ p.name }}{% if not loop.last %}, {% endif %}{% endfor %}) BUNDLE_NOEXCEPT;
+BUNDLE_API {%if method.return %}{{ resolve_type(method.return) }}{%- else %}void{%- endif %} BUNDLE_CALL {{ name }}({% for p in method.params %}{{ resolve_type(p.type) }} {{ p.name }}{% if not loop.last %}, {% endif %}{% endfor %}) BUNDLE_NOEXCEPT;
 {#--#}
 {% endfor %}
 

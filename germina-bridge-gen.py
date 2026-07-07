@@ -62,6 +62,9 @@ def main():
         import_methods=manifest.get('import', {}).get('methods', {}),
         requirements=manifest.get('requirements', []),
         generated_at=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        author=manifest.get('author', 'Unknown'),
+        mount=manifest.get('mount', f"{bundle_name}_mount"),
+        unmount=manifest.get('unmount', ''),
         manifest_path=args.manifest
     )
     with open(output_path, 'w') as f:
