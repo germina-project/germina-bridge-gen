@@ -49,7 +49,7 @@ typedef struct {{ struct_name }} {
 {%- for field in fields -%}
 {% if field is string and "_" in field %}
     uint8_t _pad{{ loop.index }}[{{ field | length }}];
-{% else %}    
+{%- else %}    
     {{ resolve_type(field.type) }} {{ field.name }};
 {%- endif -%}
 {%- endfor %}
