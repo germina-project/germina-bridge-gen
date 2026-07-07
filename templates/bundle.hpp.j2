@@ -1,0 +1,31 @@
+/* * AUTO-GENERATED FILE. DO NOT EDIT.
+ * Generated at: {{ generated_at }}
+ * Manifest: {{ manifest_path }}
+ */
+
+#pragma once
+#include <cstdint>
+#include <stddef.h>
+
+{% for name, type_info in export_types.items() %}
+typedef struct {{ type_info.name }} {
+    {% for field in type_info.layout %}
+    {% if field is string and "_" in field %}
+    /* Padding to align memory */
+    uint8_t _padding_{{ loop.index }}[{{ field | length }}];
+    {% else %}
+    {{ field.type | map_type }} {{ field.name }};
+    {% endif %}
+    {% endfor %}
+} {{ type_info.name }};
+
+/* Compile-time safety check */
+static_assert(sizeof({{ type_info.name }}) == {{ type_info.size }}, "Size mismatch for {{ type_info.name }}! Check your manifest padding.");
+{% endfor %}
+
+/* API Table for the module */
+typedef struct BundleExportApi {
+    {% for name, method in export_methods.items() %}
+    {{ method.return | map_type }} (*{{ name }})({% for p in method.params %}{{ p.type | map_type }} {{ p.name }}{% if not loop.last %}, {% endif %}{% endfor %});
+    {% endfor %}
+} BundleExportApi;
